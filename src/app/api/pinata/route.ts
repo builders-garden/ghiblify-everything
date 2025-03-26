@@ -1,49 +1,63 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 
 import { pinata } from "@/lib/pinata";
+import { PinataResponse } from "@/types/pinata-response";
 
-export async function POST(request: NextRequest) {
+const inputPinataSchema = z.object({
+  title: z.string(),
+  description: z.string(),
+  imageUrl: z.string(),
+});
+
+export async function POST(
+  request: NextRequest
+): Promise<NextResponse<PinataResponse>> {
   try {
-    const contentType = request.headers.get("content-type") || "";
-    if (contentType.includes("application/json")) {
-      const data = await request.json();
-
-      const title = data.title;
-      const description = data.description;
-      const imageUrl = data.imageUrl;
-
-      //Upload metadata to Pinata
-      const metadataFile = new File(
-        [
-          JSON.stringify({
-            name: title,
-            description: description,
-            image: imageUrl,
-          }),
-        ],
-        "metadata.json",
-        {
-          type: "application/json",
-        }
-      );
-
-      const metadataUploadData = await pinata.upload.file(metadataFile);
-      const metadataCID = metadataUploadData.IpfsHash;
-      const metadataUrl = `https://gateway.pinata.cloud/ipfs/${metadataCID}`;
-
+    const { success, data: parsedData } = inputPinataSchema.safeParse(
+      await request.json()
+    );
+    if (!success) {
       return NextResponse.json(
-        {
-          imageUrl,
+        { success: false, error: "Invalid pinata arguments" },
+        { status: 400 }
+      );
+    }
+
+    //Upload metadata to Pinata
+    const metadataFile = new File(
+      [
+        JSON.stringify({
+          name: parsedData.title,
+          description: parsedData.description,
+          image: parsedData.imageUrl,
+        }),
+      ],
+      "metadata.json",
+      {
+        type: "application/json",
+      }
+    );
+
+    const metadataUploadData = await pinata.upload.file(metadataFile);
+    const metadataCID = metadataUploadData.IpfsHash;
+    const metadataUrl = `https://gateway.pinata.cloud/ipfs/${metadataCID}`;
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          imageUrl: parsedData.imageUrl,
           metadataUrl,
           metadataCID,
         },
-        { status: 200 }
-      );
-    }
+      },
+      { status: 200 }
+    );
   } catch (e) {
     console.error(e);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { success: false, error: "Internal Server Error" },
       { status: 500 }
     );
   }

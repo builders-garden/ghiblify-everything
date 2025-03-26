@@ -1,13 +1,24 @@
 import { type NextRequest, NextResponse } from "next/server";
 import Replicate from "replicate";
+import { z } from "zod";
 
-export async function POST(request: NextRequest) {
+import { ReplicateResponse } from "@/types/replicate-response";
+
+const inputReplicateSchema = z.object({
+  user_pfp: z.string(),
+  user_username: z.string(),
+  user_fid: z.string(),
+});
+
+export async function POST(
+  request: NextRequest
+): Promise<NextResponse<ReplicateResponse>> {
   try {
-    const contentType = request.headers.get("content-type") || "";
-
-    if (!contentType.includes("application/json")) {
+    const data = await request.json();
+    const { success, data: parsedData } = inputReplicateSchema.safeParse(data);
+    if (!success) {
       return NextResponse.json(
-        { error: "Invalid content type" },
+        { success: false, error: "Invalid replicate arguments" },
         { status: 400 }
       );
     }
@@ -34,15 +45,14 @@ export async function POST(request: NextRequest) {
           prompt_strength: 0.7,
           num_inference_steps: 50,
           disable_safety_checker: true,
-          init_image:
-            "https://imagedelivery.net/BXluQx4ige9GuW0Ia56BHw/d6abc7f9-2073-4a23-84a1-d6f13ac44500/original",
+          init_image: parsedData.user_pfp,
         },
       }
     )) as ReadableStream[] | { error: string };
 
     if (!Array.isArray(output)) {
       return NextResponse.json(
-        { error: output.error || "Failed to generate image" },
+        { success: false, error: output.error || "Failed to generate image" },
         { status: 500 }
       );
     }
@@ -62,11 +72,14 @@ export async function POST(request: NextRequest) {
     const url = URL.createObjectURL(blob);
     const imageUrl = url;
 
-    return NextResponse.json({ output: imageUrl }, { status: 200 });
+    return NextResponse.json(
+      { success: true, output: imageUrl },
+      { status: 200 }
+    );
   } catch (error) {
     console.error(error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { success: false, error: "Internal Server Error" },
       { status: 500 }
     );
   }

@@ -9,7 +9,8 @@ const FAKE_FRAME_CONTEXT: FrameContext | undefined =
         user: {
           fid: 1287,
           pfpUrl:
-            "https://i.seadn.io/gcs/files/ed56e6b9a1b22720ce7490524db333e0.jpg?w=500&auto=format",
+            "https://imagedelivery.net/BXluQx4ige9GuW0Ia56BHw/d6abc7f9-2073-4a23-84a1-d6f13ac44500/original",
+          username: "test",
         },
         client: {
           clientFid: 9152,
@@ -18,8 +19,8 @@ const FAKE_FRAME_CONTEXT: FrameContext | undefined =
             bottom: 0,
             top: 0,
             left: 0,
-            right: 0
-          }
+            right: 0,
+          },
         },
         // @ts-ignore-next-line
         fakePayload: true,
@@ -30,7 +31,8 @@ type FrameContextProviderContextValue = {
   fid: number;
   pfpUrl: string | undefined;
   frameAdded: boolean;
-  safeAreaInsets?: SafeAreaInsets
+  username: string | undefined;
+  safeAreaInsets?: SafeAreaInsets;
 };
 
 const FrameContextProviderContext =
@@ -39,7 +41,6 @@ const FrameContextProviderContext =
 function FrameContextProvider({ children }: React.PropsWithChildren) {
   const [noFrameContextFound, setNoFrameContextFound] =
     React.useState<boolean>(false);
-
 
   const [frameContext, setFrameContext] = React.useState<
     FrameContext | undefined
@@ -75,7 +76,13 @@ function FrameContextProvider({ children }: React.PropsWithChildren) {
 
   return (
     <FrameContextProviderContext.Provider
-      value={{ fid: frameContext.user.fid, pfpUrl: frameContext.user.pfpUrl, frameAdded: frameContext.client.added, safeAreaInsets: frameContext.client.safeAreaInsets }}
+      value={{
+        fid: frameContext.user.fid,
+        pfpUrl: frameContext.user.pfpUrl,
+        username: frameContext.user.username,
+        frameAdded: frameContext.client.added,
+        safeAreaInsets: frameContext.client.safeAreaInsets,
+      }}
     >
       {children}
     </FrameContextProviderContext.Provider>
@@ -83,8 +90,10 @@ function FrameContextProvider({ children }: React.PropsWithChildren) {
 }
 
 export const useViewer = () => {
-  const { fid, pfpUrl, frameAdded } = React.useContext(FrameContextProviderContext);
-  return { fid, pfpUrl, frameAdded };
+  const { fid, pfpUrl, frameAdded, username } = React.useContext(
+    FrameContextProviderContext
+  );
+  return { fid, pfpUrl, frameAdded, username };
 };
 
 export const useSafeArea = () => {

@@ -2,37 +2,40 @@ import { type NextRequest, NextResponse } from "next/server";
 import { createPublicClient, createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { base } from "viem/chains";
+import { z } from "zod";
 
 import { NFT_ABI } from "@/lib/abi";
 import { NFT_CONTRACT_ADDRESS, NFT_PRICE } from "@/lib/constant";
+import { CreateNftResponse } from "@/types/create-nft-response";
 
-export async function POST(request: NextRequest) {
+const inputCreateNftSchema = z.object({
+  id: z.string(),
+  uri: z.string(),
+  address: z.string(),
+});
+
+export async function POST(
+  request: NextRequest
+): Promise<NextResponse<CreateNftResponse>> {
   try {
-    const contentType = request.headers.get("content-type") || "";
-    if (!contentType.includes("application/json")) {
+    const { success, data: parsedData } = inputCreateNftSchema.safeParse(
+      await request.json()
+    );
+    if (!success) {
       return NextResponse.json(
-        { error: "Invalid content type" },
+        { success: false, error: "Invalid create nft arguments" },
         { status: 400 }
       );
     }
 
-    const data = await request.json();
-    const { id, uri, address } = data;
-
-    console.log("Received data:", data);
-
-    if (!id || !uri || !address) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
-    }
+    const { id, uri, address } = parsedData;
+    console.log("Received data:", parsedData);
 
     // Get private key from environment variable
     const privateKey = process.env.PRIVATE_KEY;
     if (!privateKey) {
       return NextResponse.json(
-        { error: "Private key not configured" },
+        { success: false, error: "Private key not configured" },
         { status: 500 }
       );
     }
@@ -71,7 +74,7 @@ export async function POST(request: NextRequest) {
   } catch (e) {
     console.error(e);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { success: false, error: "Internal Server Error" },
       { status: 500 }
     );
   }

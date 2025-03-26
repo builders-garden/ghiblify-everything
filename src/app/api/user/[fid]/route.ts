@@ -15,15 +15,27 @@ export async function GET(
 ) {
   const { fid } = await props.params;
   if (!fid) {
-    return NextResponse.json({ error: "No fid" }, { status: 400 });
+    return NextResponse.json(
+      { success: false, error: "No fid" },
+      { status: 400 }
+    );
   }
 
   // get the files for the user from the database
   const files = await getFiles(fid);
-
   if (!files) {
-    return NextResponse.json({ error: "File not found" }, { status: 404 });
+    return NextResponse.json(
+      { success: false, error: "File not found" },
+      { status: 404 }
+    );
   }
 
-  return NextResponse.json(files);
+  return NextResponse.json({
+    success: true,
+    files: files.map((file) => ({
+      name: file.name,
+      url: file.url,
+      uploadedBy: file.uploadedBy,
+    })),
+  });
 }

@@ -3,13 +3,14 @@
 import { motion } from "motion/react";
 import React, { useEffect } from "react";
 
-import { useFrameSplash } from "@/providers/FrameSplashProvider";
 import { CollectButton } from "@/components/app/collectButton";
+import { useFrameSplash } from "@/providers/FrameSplashProvider";
 
 // eslint-disable-next-line import/no-default-export
 export default function Home() {
   const { dismiss } = useFrameSplash();
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isGenerating, setIsGenerating] = React.useState(false);
 
   useEffect(() => {

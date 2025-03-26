@@ -1,23 +1,26 @@
 import { revalidateTag } from "next/cache";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { UTApi } from "uploadthing/server";
 import { z } from "zod";
 
 import { getOrCreateUser, saveFiles } from "@/db/queries";
 import { env } from "@/lib/env.mjs";
+import { UploadResponse } from "@/types";
 
 const utapi = new UTApi({
   token: env.UPLOADTHING_TOKEN,
 });
 
-const inputSchema = z.object({
+const inputUploadBlobSchema = z.object({
   generated_files: z.array(z.instanceof(File)),
   user_fid: z.string(),
   user_username: z.string(),
   user_pfp: z.string(),
 });
 
-export const POST = async (req: Request) => {
+export const POST = async (
+  req: NextRequest
+): Promise<NextResponse<UploadResponse>> => {
   try {
     // Check if the request is authorized
     const token = req.headers.get("x-secure-upload");
@@ -30,10 +33,10 @@ export const POST = async (req: Request) => {
 
     // Parse the request body
     const data = await req.json();
-    const { success, data: parsedData } = inputSchema.safeParse(data);
+    const { success, data: parsedData } = inputUploadBlobSchema.safeParse(data);
     if (!success) {
       return NextResponse.json(
-        { success: false, error: "Invalid arguments" },
+        { success: false, error: "Invalid upload blob arguments" },
         { status: 400 }
       );
     }
@@ -68,8 +71,7 @@ export const POST = async (req: Request) => {
 
     return NextResponse.json({
       success: true,
-      uploadedBy: user.fid,
-      returnFiles,
+      files: returnFiles,
     });
   } catch (error) {
     console.error("Upload failed:", error);
