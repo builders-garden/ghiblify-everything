@@ -1,4 +1,4 @@
-import { sdk } from '@farcaster/frame-sdk';
+import { sdk } from "@farcaster/frame-sdk";
 import { farcasterFrame } from "@farcaster/frame-wagmi-connector";
 import React from "react";
 import {
@@ -50,6 +50,22 @@ export function CollectButton({
 
   const { fetchTransaction } = useFeaturedMintTransaction();
 
+  // example of pinata upload
+
+  // const handleUploadPinata = async () => {
+  //   const uploadResponse = await fetch("/api/pinata", {
+  //     method: "POST",
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //     },
+  //     body: JSON.stringify({
+  //       title: "Test PFP",
+  //       description: "Test description",
+  //       imageFile: "image.png",
+  //     }),
+  //   });
+  // };
+
   React.useEffect(() => {
     if (isSuccess && !successHandled.current) {
       successHandled.current = true;
@@ -83,7 +99,7 @@ export function CollectButton({
         to: tx.to,
         value: BigInt(tx.value),
         data: tx.data,
-        chainId: 8453
+        chainId: 8453,
       });
 
       setHash(hash);
@@ -126,9 +142,13 @@ export function CollectButton({
             onClick={handleClick}
             disabled={!isMinting && frameAdded}
           >
-            {!isConnected && isMinting ? "Connect" :
-              isMinting ? "Collect" :
-              frameAdded ? "Added" : "Add Frame"}
+            {!isConnected && isMinting
+              ? "Connect"
+              : isMinting
+                ? "Collect"
+                : frameAdded
+                  ? "Added"
+                  : "Add Frame"}
           </Button>
         )}
       </div>
