@@ -1,6 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { PinataSDK } from "pinata";
 
-import { pinata } from "@/lib/pinata";
+const pinata = new PinataSDK({
+  pinataJwt: process.env.PINATA_JWT!,
+  pinataGateway: "example-gateway.mypinata.cloud",
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,42 +32,30 @@ export async function POST(request: NextRequest) {
       });
 
       // Upload image file to Pinata
-      const imageUploadData = await pinata.upload.file(imageFile);
-      const imageCID = imageUploadData.IpfsHash;
+      const imageUploadData = await pinata.upload.public.file(imageFile);
+      const imageCID = imageUploadData.cid;
       const imageUrl = `https://gateway.pinata.cloud/ipfs/${imageCID}`;
+      console.log("Upload result:", JSON.stringify(imageUploadData, null, 2));
 
-      // Send the Blob URLs to Pinata API
-      const uploadResponse = await fetch("/api/pinata", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          type: "combined",
-          imageFileUrl: imageUrl,
-          title: title,
-          description: description,
-        }),
+      //Upload metadata to Pinata
+      const metadataFile = new File([JSON.stringify({
+        name: title,
+        description: description,
+        image: imageUrl,
+      })], "metadata.json", {
+        type: "application/json",
       });
 
-      if (!uploadResponse.ok) {
-        const errorData = await uploadResponse.json();
-        return NextResponse.json(
-          { error: errorData.error || "Error during upload process" },
-          { status: 500 }
-        );
-      }
-
-      const uploadResult = await uploadResponse.json();
-      console.log("Upload result:", JSON.stringify(uploadResult, null, 2));
-      console.log("Metadata URL:", uploadResult.metadataUrl);
+      const metadataUploadData = await pinata.upload.public.json(metadataFile);
+      const metadataCID = metadataUploadData.cid;
+      const metadataUrl = `https://gateway.pinata.cloud/ipfs/${metadataCID}`;
 
         return NextResponse.json(
           {
             imageUrl,
             imageCID,
-            metadataUrl: uploadResult.metadataUrl,
-            metadataCID: uploadResult.metadataCID,
+            metadataUrl,
+            metadataCID,
           },
           { status: 200 }
         );
