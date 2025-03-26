@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
       auth: process.env.REPLICATE_API_TOKEN,
     });
 
-    const output = await replicate.run(
+    const output = (await replicate.run(
       "karanchawla/studio-ghibli:fd1975a55465d2cf70e5e9aad03e0bb2b13b9f9b715d49a27748fc45797a6ae5",
       {
         input: {
@@ -34,12 +34,35 @@ export async function POST(request: NextRequest) {
           prompt_strength: 0.7,
           num_inference_steps: 50,
           disable_safety_checker: true,
-          init_image: "",
+          init_image:
+            "https://imagedelivery.net/BXluQx4ige9GuW0Ia56BHw/d6abc7f9-2073-4a23-84a1-d6f13ac44500/original",
         },
       }
-    );
+    )) as ReadableStream[] | { error: string };
 
-    return NextResponse.json({ output }, { status: 200 });
+    if (!Array.isArray(output)) {
+      return NextResponse.json(
+        { error: output.error || "Failed to generate image" },
+        { status: 500 }
+      );
+    }
+
+    const reader = output[0].getReader();
+    const chunks = [];
+    let done = false;
+    while (!done) {
+      const { done: doneReading, value } = await reader.read();
+      if (doneReading) {
+        done = true;
+        break;
+      }
+      chunks.push(value);
+    }
+    const blob = new Blob(chunks);
+    const url = URL.createObjectURL(blob);
+    const imageUrl = url;
+
+    return NextResponse.json({ output: imageUrl }, { status: 200 });
   } catch (error) {
     console.error(error);
     return NextResponse.json(

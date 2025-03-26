@@ -50,22 +50,6 @@ export function CollectButton({
 
   const { fetchTransaction } = useFeaturedMintTransaction();
 
-  // example of pinata upload
-
-  // const handleUploadPinata = async () => {
-  //   const uploadResponse = await fetch("/api/pinata", {
-  //     method: "POST",
-  //     headers: {
-  //       "Content-Type": "application/json",
-  //     },
-  //     body: JSON.stringify({
-  //       title: "Test PFP",
-  //       description: "Test description",
-  //       imageFile: "image.png",
-  //     }),
-  //   });
-  // };
-
   React.useEffect(() => {
     if (isSuccess && !successHandled.current) {
       successHandled.current = true;
@@ -74,6 +58,38 @@ export function CollectButton({
       successHandled.current = false;
     }
   }, [isSuccess, onCollect]);
+
+  const handleGenerate = async () => {
+    const genResponse = await (
+      await fetch("/api/replicate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+    ).json();
+    const { output: imageBlob } = genResponse;
+    console.log("Generated image URL:", imageBlob);
+
+    // image blob is like this: blob:nodedata:ef107a44-911d-44c6-8742-09399697c036
+
+    const imageUrl = URL.createObjectURL(imageBlob);
+    console.log("Image URL:", imageUrl);
+
+    const uploadResponse = await fetch("/api/pinata", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        title: "Test PFP",
+        description: "Test description",
+        imageUrl,
+      }),
+    });
+    const uploadData = await uploadResponse.json();
+    console.log("Upload response:", uploadData);
+  };
 
   const handleClick = async () => {
     try {
@@ -119,7 +135,13 @@ export function CollectButton({
   return (
     <div className="sticky bottom-0 left-0 right-0 pb-[env(safe-area-inset-bottom)] bg-card border-t border-border">
       <div className="pb-4 px-4 pt-2">
-        {isMinting && (
+        <Button
+          className="w-full relative bg-active text-active-foreground"
+          onClick={handleGenerate}
+        >
+          Generate
+        </Button>
+        {/* {isMinting && (
           <div className="flex justify-between items-center mb-1 text-sm">
             <span className="text-muted text-sm">Cost</span>
             <span className="text-foreground font-medium">
@@ -150,7 +172,7 @@ export function CollectButton({
                   ? "Added"
                   : "Add Frame"}
           </Button>
-        )}
+        )} */}
       </div>
     </div>
   );

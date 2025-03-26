@@ -4,17 +4,19 @@ import type { Metadata } from "next";
 
 import { Providers } from "@/providers/Providers";
 
+const appUrl = process.env.NEXT_PUBLIC_URL;
+
 const frame = {
   version: "next",
-  imageUrl: `https://wc-featured-mint.vercel.app/api/og`,
+  imageUrl: `${appUrl}/images/feed.png`,
   button: {
     title: "Collect",
     action: {
       type: "launch_frame",
       name: "Mints",
-      url: "https://mint.warpcast.com/",
-      iconImageUrl: "https://mint.warpcast.com/app.png",
-      splashImageUrl: "https://mint.warpcast.com/splash.png",
+      url: appUrl,
+      iconImageUrl: `${appUrl}/images/app.png`,
+      splashImageUrl: `${appUrl}/images/splash.png`,
       splashBackgroundColor: "#ffffff",
     },
   },
@@ -22,12 +24,12 @@ const frame = {
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    metadataBase: new URL("https://mint.warpcast.com/"),
+    metadataBase: new URL(appUrl || ""),
     title: "Mints",
     openGraph: {
       title: "Warpcast",
       description: "Mints",
-      images: "https://wc-featured-mint.vercel.app/api/og",
+      images: `${appUrl}/images/feed.png`,
     },
     other: {
       "fc:frame": JSON.stringify(frame),
@@ -44,8 +46,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.googleapis.com"
+        />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+        />
         {/* eslint-disable-next-line @next/next/google-font-display */}
         <link
           href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=block"
