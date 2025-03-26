@@ -2,61 +2,47 @@
 
 import React, { useEffect } from "react";
 
-import { ArtworkImage } from "@/components/app/artworkImage";
-import { ArtworkInfo } from "@/components/app/artworkInfo";
-import { CollectButton } from "@/components/app/collectButton";
-import { MintErrorSheet } from "@/components/app/mintErrorSheet";
-import { MintSuccessSheet } from "@/components/app/mintSuccessSheet";
-import { Card } from "@/components/ui/card";
-import { useFeaturedMint } from "@/lib/queries";
 import { useFrameSplash } from "@/providers/FrameSplashProvider";
 
 // eslint-disable-next-line import/no-default-export
 export default function Home() {
   const { dismiss } = useFrameSplash();
-  const { data } = useFeaturedMint();
-  const { mint } = data.result;
-
-  const [showSuccess, setShowSuccess] = React.useState(false);
-  const [error, setError] = React.useState<string>();
 
   useEffect(() => {
     dismiss();
   }, [dismiss]);
 
   return (
-    <div className="w-full min-h-screen flex flex-col">
-      <ArtworkImage
-        imageUrl={mint.imageUrl}
-        name={mint.name}
-      />
-      <Card className="flex flex-col -mt-6 relative z-1 flex-grow pb-4">
-        <ArtworkInfo
-          name={mint.name}
-          creator={mint.creator}
-          chain={mint.chain}
-          description={mint.description}
-          isMinting={mint.isMinting}
-        />
-        <CollectButton
-          timestamp={mint.endsAt}
-          price={mint.priceUsd}
-          isMinting={mint.isMinting}
-          onCollect={() => setShowSuccess(true)}
-          onError={setError}
-        />
-      </Card>
-      <MintSuccessSheet
-        isOpen={showSuccess}
-        onClose={() => setShowSuccess(false)}
-        name={mint.name}
-        imageUrl={mint.imageUrl}
-      />
-      <MintErrorSheet
-        isOpen={!!error}
-        onClose={() => setError(undefined)}
-        error={error || ""}
-      />
+    <div
+      className="w-full min-h-screen flex flex-col bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: 'url("/images/bg.png")' }}
+    >
+      <div className="flex-1 flex flex-col items-center p-8 gap-8">
+        <div className="relative w-full max-w-4xl h-[400px] flex justify-center">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className={`
+                absolute w-[200px] aspect-square bg-white/20 rounded-lg border-2 border-dashed border-white/50 
+                flex items-center justify-center shadow-xl backdrop-blur-sm
+                transition-transform hover:scale-105 hover:z-10
+                ${i === 1 ? "left-[5%] rotate-[-8deg] top-[45%] z-[2]" : ""}
+                ${i === 2 ? "left-[25%] rotate-[4deg] top-[10%] z-[1]" : ""}
+                ${i === 3 ? "left-[45%] rotate-[12deg] top-[50%] z-[3]" : ""}
+              `}
+            >
+              <span className="text-white/70">Image {i}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-auto flex flex-col items-center gap-4">
+          <h1 className="text-4xl font-bold text-white">Ghiblify Yourself</h1>
+          <button className="px-8 py-3 bg-[#e46d49] hover:bg-[#b63b15] transition-colors rounded-full text-white font-semibold">
+            Generate
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
