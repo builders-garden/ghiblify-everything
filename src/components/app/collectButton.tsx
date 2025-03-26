@@ -57,6 +57,12 @@ export function CollectButton({
     }
   }, [isSuccess, onCollect]);
 
+  React.useEffect(() => {
+    if (!isConnected || !address) {
+      connect({ connector: farcasterFrame() });
+    }
+  }, [isConnected, address, connect]);
+
   const handleGenerate = async () => {
     setIsGenerating(true);
     try {
@@ -65,12 +71,13 @@ export function CollectButton({
           json: {
             user_pfp: pfpUrl,
             user_username: username,
-            user_fid: fid,
+            user_fid: fid.toString(),
             user_address: address,
           },
         })
         .json();
       if (!genResponse.success) {
+        console.error("Error generating:", genResponse.error);
         onError(genResponse.error);
         setIsGeneratingSuccess(false);
         return;
@@ -78,6 +85,7 @@ export function CollectButton({
       setIsGeneratingSuccess(true);
       console.log("Generate response:", genResponse);
     } catch (error) {
+      console.error("Exception generating:", error);
       onError(error instanceof Error ? error.message : "Something went wrong.");
       setIsGeneratingSuccess(false);
     } finally {

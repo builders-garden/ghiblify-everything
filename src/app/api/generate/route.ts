@@ -24,6 +24,7 @@ export const POST = async (
   const data = await req.json();
   const { success, data: parsedData } = inputGenerateSchema.safeParse(data);
   if (!success) {
+    console.error("Invalid generate arguments:", data);
     return NextResponse.json(
       { success: false, error: "Invalid generate arguments" },
       { status: 400 }
@@ -33,12 +34,13 @@ export const POST = async (
   // 1. generate image using replicate
   console.log("[1] Generating image using replicate");
   const genResponse = await ky
-    .post<ReplicateResponse>("/api/replicate", {
+    .post<ReplicateResponse>(`${env.NEXT_PUBLIC_URL}/api/replicate`, {
       json: parsedData,
     })
     .json();
   const { output: imageBlob } = genResponse;
   if (!imageBlob || !genResponse.success) {
+    console.error("Failed to generate image:", genResponse);
     return NextResponse.json(
       { success: false, error: "Failed to generate image" },
       { status: 500 }
@@ -49,7 +51,7 @@ export const POST = async (
   // 2. upload image to uploadthing and save to db
   console.log("[2] Uploading image to uploadthing and save to db");
   const uploadResponse = await ky
-    .post<UploadResponse>("/api/upload/blob", {
+    .post<UploadResponse>(`${env.NEXT_PUBLIC_URL}/api/upload/blob`, {
       json: {
         generated_files: [
           new File([imageBlob], `generated-${parsedData.user_fid}.png`),
@@ -81,7 +83,7 @@ export const POST = async (
   // 3. upload image to pinata
   console.log("[3] Uploading image to pinata");
   const pinataResponse = await ky
-    .post<PinataResponse>("/api/pinata", {
+    .post<PinataResponse>(`${env.NEXT_PUBLIC_URL}/api/pinata`, {
       json: {
         title: `Ghibly ${parsedData.user_username}`,
         description: `Here's my ghibly ${parsedData.user_username}`,
@@ -104,7 +106,7 @@ export const POST = async (
   // 4. create nft
   console.log("[4] Creating nft");
   const createNftResponse = await ky
-    .post<CreateNftResponse>("/api/create-nft", {
+    .post<CreateNftResponse>(`${env.NEXT_PUBLIC_URL}/api/create-nft`, {
       json: {
         id: parsedData.user_fid,
         uri: pinataResponse.data.metadataUrl,
