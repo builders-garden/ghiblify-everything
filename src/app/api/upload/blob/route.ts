@@ -12,7 +12,8 @@ const utapi = new UTApi({
 });
 
 const inputUploadBlobSchema = z.object({
-  generated_files: z.array(z.instanceof(File)),
+  generated_file: z.custom<Blob>(),
+  generated_file_name: z.string(),
   user_fid: z.string(),
   user_username: z.string(),
   user_pfp: z.string(),
@@ -42,7 +43,18 @@ export const POST = async (
     }
 
     // Upload the file to UploadThing
-    const uploadResponses = await utapi.uploadFiles(parsedData.generated_files);
+    const uploadResponse = await utapi.uploadFiles({
+      ...parsedData.generated_file,
+      name: parsedData.generated_file_name,
+      lastModified: Date.now(),
+    });
+    const file = uploadResponse.data;
+    if (!file) {
+      return NextResponse.json(
+        { success: false, error: "Failed to upload file" },
+        { status: 500 }
+      );
+    }
 
     // Get or create the user
     const user = await getOrCreateUser(
@@ -53,17 +65,13 @@ export const POST = async (
 
     // Get the files from UploadThing response
     const returnFiles = [];
-    for (const uploadRes of uploadResponses) {
-      const file = uploadRes.data;
-      if (!file) continue;
-      // Persist the file data to your database
-      returnFiles.push({
-        key: file.key,
-        name: file.name,
-        url: file.ufsUrl,
-        uploadedBy: user.fid,
-      });
-    }
+    // Persist the file data to your database
+    returnFiles.push({
+      key: file.key,
+      name: file.name,
+      url: file.ufsUrl,
+      uploadedBy: user.fid,
+    });
     await saveFiles(returnFiles);
 
     // Revalidate the route that can be used for polling

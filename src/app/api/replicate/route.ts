@@ -27,7 +27,7 @@ export async function POST(
       auth: process.env.REPLICATE_API_TOKEN,
     });
 
-    const output = (await replicate.run(
+    const outputs = (await replicate.run(
       "karanchawla/studio-ghibli:fd1975a55465d2cf70e5e9aad03e0bb2b13b9f9b715d49a27748fc45797a6ae5",
       {
         input: {
@@ -38,7 +38,7 @@ export async function POST(
           refine: "no_refiner",
           scheduler: "DDIM",
           lora_scale: 0.6,
-          num_outputs: 1,
+          num_outputs: 3,
           guidance_scale: 7.5,
           apply_watermark: true,
           high_noise_frac: 0.8,
@@ -48,32 +48,20 @@ export async function POST(
           init_image: parsedData.user_pfp,
         },
       }
-    )) as ReadableStream[] | { error: string };
-
-    if (!Array.isArray(output)) {
-      return NextResponse.json(
-        { success: false, error: output.error || "Failed to generate image" },
-        { status: 500 }
-      );
-    }
-
-    const reader = output[0].getReader();
-    const chunks = [];
-    let done = false;
-    while (!done) {
-      const { done: doneReading, value } = await reader.read();
-      if (doneReading) {
-        done = true;
-        break;
-      }
-      chunks.push(value);
-    }
-    const blob = new Blob(chunks);
-    const url = URL.createObjectURL(blob);
-    const imageUrl = url;
+    )) as unknown as {
+      url: () => Promise<URL>;
+      blob: () => Promise<Blob>;
+    }[];
+    const outputUrls = await Promise.all(
+      outputs.map(async (output) => {
+        const url = await output.url();
+        return url.href;
+      })
+    );
+    console.log("[1] Image generated...", outputUrls);
 
     return NextResponse.json(
-      { success: true, output: imageUrl },
+      { success: true, outputs: outputUrls },
       { status: 200 }
     );
   } catch (error) {

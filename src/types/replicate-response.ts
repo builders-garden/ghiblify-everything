@@ -1,5 +1,5 @@
 export type ReplicateResponse = {
   success: boolean;
-  output?: string;
+  outputs?: string[];
   error?: string;
 };

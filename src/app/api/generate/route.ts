@@ -2,13 +2,13 @@ import ky from "ky";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { saveFiles } from "@/db/queries";
 import { env } from "@/lib/env.mjs";
 import {
   CreateNftResponse,
   GenerateResponse,
   PinataResponse,
   ReplicateResponse,
-  UploadResponse,
 } from "@/types";
 
 const inputGenerateSchema = z.object({
@@ -35,50 +35,69 @@ export const POST = async (
   console.log("[1] Generating image using replicate");
   const genResponse = await ky
     .post<ReplicateResponse>(`${env.NEXT_PUBLIC_URL}/api/replicate`, {
-      json: parsedData,
+      json: {
+        user_pfp: parsedData.user_pfp,
+        user_username: parsedData.user_username,
+        user_fid: parsedData.user_fid,
+      },
     })
     .json();
-  const { output: imageBlob } = genResponse;
-  if (!imageBlob || !genResponse.success) {
+  const { outputs: generatedImageUrls } = genResponse;
+  if (!generatedImageUrls || !genResponse.success) {
     console.error("Failed to generate image:", genResponse);
     return NextResponse.json(
       { success: false, error: "Failed to generate image" },
       { status: 500 }
     );
   }
-  console.log("[1] Image generated...");
+  console.log("[1] Image generated...", generatedImageUrls);
 
+  // TODO add uploadthing
   // 2. upload image to uploadthing and save to db
-  console.log("[2] Uploading image to uploadthing and save to db");
-  const uploadResponse = await ky
-    .post<UploadResponse>(`${env.NEXT_PUBLIC_URL}/api/upload/blob`, {
-      json: {
-        generated_files: [
-          new File([imageBlob], `generated-${parsedData.user_fid}.png`),
-        ],
-        user_fid: parsedData.user_fid,
-        user_username: parsedData.user_username,
-        user_pfp: parsedData.user_pfp,
-      },
-      headers: {
-        "x-secure-upload": env.SECURE_UPLOAD_TOKEN,
-      },
-    })
-    .json();
-  console.log(
-    "[2] Image uploaded to uploadthing with status:",
-    uploadResponse.success
-  );
-  if (!uploadResponse.success || !uploadResponse.files) {
-    console.error(uploadResponse.error);
-    return NextResponse.json(
-      { success: false, error: "Failed to upload image" },
-      { status: 500 }
-    );
-  }
+  // console.log("[2] Uploading image to uploadthing and save to db");
+  // const uploadResponse = await ky
+  //   .post<UploadResponse>(`${env.NEXT_PUBLIC_URL}/api/upload/blob`, {
+  //     json: {
+  //       generated_files: [
+  //         new File([imageBlob], `generated-${parsedData.user_fid}.png`),
+  //       ],
+  //       user_fid: parsedData.user_fid,
+  //       user_username: parsedData.user_username,
+  //       user_pfp: parsedData.user_pfp,
+  //     },
+  //     headers: {
+  //       "x-secure-upload": env.SECURE_UPLOAD_TOKEN,
+  //     },
+  //   })
+  //   .json();
+  // console.log(
+  //   "[2] Image uploaded to uploadthing with status:",
+  //   uploadResponse.success
+  // );
+  // if (!uploadResponse.success || !uploadResponse.files) {
+  //   console.error(uploadResponse.error);
+  //   return NextResponse.json(
+  //     { success: false, error: "Failed to upload image" },
+  //     { status: 500 }
+  //   );
+  // }
 
-  const { files } = uploadResponse;
-  const imageUrl = files[0].url;
+  // const { files } = uploadResponse;
+  // const imageUrl = files[0].url;
+
+  // 2. Save output images to db
+  console.log("[2] Saving output images to db");
+  const returnFiles = [];
+  for (const url of generatedImageUrls) {
+    returnFiles.push({
+      url,
+      name: `generated.${parsedData.user_fid}.png`,
+      key: `generated.${parsedData.user_fid}.png`,
+      uploadedBy: parsedData.user_fid,
+    });
+  }
+  await saveFiles(returnFiles);
+  console.log("[2] Image saved to db with status:", true);
 
   // 3. upload image to pinata
   console.log("[3] Uploading image to pinata");
@@ -87,7 +106,7 @@ export const POST = async (
       json: {
         title: `Ghibly ${parsedData.user_username}`,
         description: `Here's my ghibly ${parsedData.user_username}`,
-        imageUrl: imageUrl,
+        imageUrl: returnFiles[0].url,
       },
     })
     .json();
@@ -126,7 +145,7 @@ export const POST = async (
   return NextResponse.json({
     success: true,
     transactionHash: createNftResponse.transactionHash,
-    imageUrl: imageUrl,
+    imageUrl: returnFiles[0].url,
     pinataImageUrl: pinataResponse.data.imageUrl,
   });
 };
