@@ -14,28 +14,7 @@ export async function POST(request: NextRequest) {
 
       const title = data.title;
       const description = data.description;
-      const base64Image = data.base64Image;
-
-      if (!title || !description || !base64Image) {
-        return NextResponse.json(
-          { error: "Missing required fields" },
-          { status: 400 }
-        );
-      }
-
-      // Convert base64 to Blob
-      const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
-      const binaryData = Buffer.from(base64Data, "base64");
-      const imageBlob = new Blob([binaryData], { type: "image/png" });
-      const imageFile = new File([imageBlob], "image.png", {
-        type: "image/png",
-      });
-
-      // Upload image file to Pinata
-      const imageUploadData = await pinata.upload.public.file(imageFile);
-      const imageCID = imageUploadData.cid;
-      const imageUrl = `https://gateway.pinata.cloud/ipfs/${imageCID}`;
-      console.log("Upload result:", JSON.stringify(imageUploadData, null, 2));
+      const imageUrl = data.imageUrl;
 
       //Upload metadata to Pinata
       const metadataFile = new File([JSON.stringify({
@@ -53,7 +32,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             imageUrl,
-            imageCID,
             metadataUrl,
             metadataCID,
           },
