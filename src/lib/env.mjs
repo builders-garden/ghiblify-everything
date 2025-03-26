@@ -15,7 +15,7 @@ export const env = createEnv({
     // neynar
     NEYNAR_API_KEY: z.string().min(1),
     // private key for the wallet that will be used to deploy NFTs
-    PVT_KEY: z.string().min(1),
+    PRIVATE_KEY: z.string().min(1),
     // replicate
     REPLICATE_API_TOKEN: z.string().min(1),
     // uploadthing

@@ -32,6 +32,7 @@
     "drizzle-orm": "^0.41.0",
     "jiti": "1.x",
     "lucide-react": "^0.468.0",
+    "motion": "^12.6.2",
     "next": "15.0.4",
     "pinata": "^2.1.0",
     "pinata-web3": "^0.5.4",

@@ -68,13 +68,13 @@ export function CollectButton({
         },
       })
     ).json();
-    const { output: imageBlob } = genResponse;
-    console.log("Generated image URL:", imageBlob);
+    const { output: imageBlobUrl } = genResponse;
 
     // image blob is like this: blob:nodedata:ef107a44-911d-44c6-8742-09399697c036
+    // upload to service
 
-    const imageUrl = URL.createObjectURL(imageBlob);
-    console.log("Image URL:", imageUrl);
+    const genImageUrl =
+      "https://imagedelivery.net/BXluQx4ige9GuW0Ia56BHw/d6abc7f9-2073-4a23-84a1-d6f13ac44500/original";
 
     const uploadResponse = await fetch("/api/pinata", {
       method: "POST",
@@ -84,11 +84,25 @@ export function CollectButton({
       body: JSON.stringify({
         title: "Test PFP",
         description: "Test description",
-        imageUrl,
+        imageUrl: genImageUrl,
       }),
     });
     const uploadData = await uploadResponse.json();
     console.log("Upload response:", uploadData);
+
+    const mintResponse = await fetch("/api/create-nft", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        id: 1,
+        uri: "https://imagedelivery.net/BXluQx4ige9GuW0Ia56BHw/d6abc7f9-2073-4a23-84a1-d6f13ac44500/original",
+        address: address,
+      }),
+    });
+    const mintData = await mintResponse.json();
+    console.log("Mint response:", mintData);
   };
 
   const handleClick = async () => {

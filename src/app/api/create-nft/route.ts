@@ -19,6 +19,8 @@ export async function POST(request: NextRequest) {
     const data = await request.json();
     const { id, uri, address } = data;
 
+    console.log("Received data:", data);
+
     if (!id || !uri || !address) {
       return NextResponse.json(
         { error: "Missing required fields" },
